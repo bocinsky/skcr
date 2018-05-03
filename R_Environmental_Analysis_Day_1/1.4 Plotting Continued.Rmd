@@ -1,0 +1,272 @@
+---
+title: "More plotting functions in R"
+author: "Tracy Bowerman"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  bookdown::html_document2:
+    code_folding: hide
+    df_print: paged
+    fig_caption: yes
+    toc: true
+    toc_float: true
+editor_options: 
+  chunk_output_type: console
+---
+
+In this tutorial we will build on our knowledge of graphing and make some different types of plots
+
+# Learning goals
+In this short tutorial, you will learn how to make some plots that will help in exploratory analyses and visualizing your data, including:
+
+-  line graphs in R
+-  histograms and QQplots in R 
+-  call individual levels of a factor
+-  subset data
+
+load packages and set your working directory, just like before:
+```{r setup, include=FALSE}
+# set a pathname to the directory you wnat to where file inputs are found and outputs are sent). In this case, we use the current directory where this .Rmd file is located.
+dir <- getwd()
+```
+# Read in Flathead Lake Char data
+This is a subset of fish length data from Flathead lake.  These data were downloaded from the public 'FishMT' site run by Montana Fish Wildlife and Parks and can be found here http://fwp.mt.gov/fish/  In this data subset, only two species of fish were included, both char--Bull trout and Lake trout.  These data were altered slightly from what was on the website, and were subset to only include these 2 species, and only data from spring sampling.  The data include average, stdev, max, and min for weight and length, plus year and species. We will use these data to explore differences in average fish size between bull and lake trout and over time.  
+
+```{r Flathead Lake Salvelinus Data, include=FALSE}
+library(tidyverse)
+## Read in this flathead lake char data (salv is short for the genus Salvelinus)
+FLS <- read_csv("data/FlatheadLk_salv.csv")
+
+# look at the structure of the data
+str(FLS)
+
+# check to make sure there are only the 2 char species (and see how they are named)
+levels(FLS$Species)
+```
+
+# Make a line graph of the average length 
+
+```{r line graphs of fish length}
+
+# plot average length as a function of year
+plot(FLS$`Average Length` ~ FLS$`Survey Year`,
+     xlab = "Year", 
+     ylab = "Avg Length (mm)"
+)
+
+# this shows two points for each year (one for each species)
+# we can confirm this by specifying a different color for each species.  Do you remember how to do that?
+
+# there are many ways to subset the data to plot each species separately.  This is one way I often use because it allows code to be easily re-written for another variable or quickly recoded into a loop function or similar.
+plot(FLS$`Average Length`[FLS$Species == "Lake Trout"] ~
+       FLS$`Survey Year`[FLS$Species == "Lake Trout"],
+     xlab = "Year", 
+     ylab = "Avg Length (mm)"
+)
+
+# that's  hard to see the pattern; lets link our observations with a line. You can do this by specifying 'type='
+plot(FLS$`Average Length`[FLS$Species == "Lake Trout"] ~
+       FLS$`Survey Year`[FLS$Species == "Lake Trout"],
+     xlab = "Year", 
+     ylab = "Avg Length (mm)", 
+     type = "o"
+)
+
+# By writing 'points' instead of plot, we can add the bull trout data on top of the existing lake trout data.  Let's make them red so we can tell them apart from the lake trout
+points(FLS$`Average Length`[FLS$Species == "Bull Trout"] ~
+         FLS$`Survey Year`[FLS$Species == "Bull Trout"],
+       xlab = "Year", 
+       ylab = "Average Length (mm)", 
+       col = "red", 
+       type = "o"
+)
+
+# The bull trout are smaller so don't show up on the axis that was automatically generated for lake trout.  Let's specify the range of y-axis values using 'ylim=c(min, max)'.  Here, we set the lower limit as the minimum observed length for the dataset, and the upper limit for the maximum observed.
+plot(FLS$`Average Length`[FLS$Species == "Lake Trout"] ~
+       FLS$`Survey Year`[FLS$Species == "Lake Trout"],
+     xlab = "Year", 
+     ylab = "Avg Length (mm)", 
+     type = "o",
+     ylim = c(min(FLS$`Average Length`), 
+              max(FLS$`Average Length`))
+)
+
+points(FLS$`Average Length`[FLS$Species == "Bull Trout"] ~
+         FLS$`Survey Year`[FLS$Species == "Bull Trout"],
+       xlab = "Year", 
+       ylab = "Avg Length (mm)", 
+       col = "red", 
+       type = "o"
+)
+```
+
+# Exercise: 
+play around with setting limits on graph by specifying numbers.  For example, you could try: ylim=c(250, 800). Try changing colors or adding a legend.  Try type="l", type="b", type="h" to see what they do and which you like
+
+```{r barplot example}
+# side-by-side bar chart
+# We will use a barchart to compare average size of Flathead Lake bull trout vs lake trout per year.  We have 2 categorical variables: Species, year, so one way to show this is with a side-by-side bar chart
+
+
+## for this example, we will just use a subset of the survey years
+summary(FLS$`Survey Year`) # check how many years of data we have
+FLS2 <- FLS[which(FLS$`Survey Year` > 2012), ] # subset data to only keep 2013-2017, and give this data subset a different name
+
+
+# In R, the function for barplots requires that bar height is a vector or matrix. If height is a vector, the values determine the heights of the bars in the plot. If height is a matrix and the option beside=FALSE then each bar of the plot corresponds to a column of height, with the values in the column giving the heights of stacked "sub-bars". If height is a matrix and beside=TRUE, then the values in each column are juxtaposed rather than stacked. Include option names.arg=(character vector) to label the bars. The option horiz=TRUE to createa a horizontal barplot.
+
+# This is one way to make a table (or matrix) of the desired data for use with the 'barplot' function
+XT <- xtabs(`Average Length` ~ Species + `Survey Year`, data = FLS2)
+XT # print to check
+
+barplot(XT,
+        beside = TRUE,
+        legend = TRUE,
+        xlab = "Year",
+        ylab = "Average Length"
+)
+
+# adjust the y axis and legend location so you can see all the bars
+barplot(XT,
+        beside = TRUE,
+        xlab = "Year",
+        ylab = "Average Length",
+        ylim = c(0, 800),
+        legend = TRUE,
+        args.legend = list(x = 15, 
+                           y = 920)
+)
+
+
+# On your own: see what happens if you specify 'beside=FALSE' and horiz=TRUE
+```
+
+# Histograms and Quantile-Quantile plots
+Let's explore some other useful plots for data exploration: histograms and Quantile-Quantile plots.  Quantiles are cut points dividing the range of a probability distribution or observations into contiguous intervals.  We can use normal QQ plots to evaluate normality, with the data plotted against theoretical quantiles , and plot the quantiles of one population against another to see if they have similar distributions (even if observed values are different).  Histograms are used to evaluate distribution of data, and evaluate normality, skewness, and can indicate outliers.  We will use the iris data for this.
+
+```{r example histograms and qqplots}
+
+# Here's the petal length data plotted against theoretical normal quantiles
+# We would use this to check normality
+qqnorm(iris$Petal.Length)
+qqline(iris$Petal.Length) # add a line-yikes!
+
+# what should a qqnorm plot look like?
+# let's plot data from the sepals
+qqnorm(iris$Sepal.Length)
+qqline(iris$Sepal.Length) # better
+
+qqnorm(iris$Sepal.Width)
+qqline(iris$Sepal.Width)
+# you get this step-like pattern because data are collected in even increments (or data that are rounded)
+
+# plot a histogram of the petal length data
+hist(iris$Petal.Length)
+
+# increase the number of bars using 'breaks='
+hist(iris$Petal.Length, 
+     breaks = 30)
+
+# so far we have been plotting frequencies, we can also plot the probability distribution by specifying 'prob=TRUE' ; note the difference on y axis
+hist(iris$Petal.Length, 
+     breaks = 30, 
+     prob = TRUE)
+
+# you can plot a density curve over this:
+lines(density(iris$Petal.Length))
+```
+
+# Exercise 
+Either go back to the barplot and see what happens if you specify `beside=FALSE` and `horiz=TRUE` or use qqplots or histograms to evaluate whether the other iris variables are normally distributed. You can use `names(iris)` to see the variable names.
+
+
+```{r combining multiple plots}
+opar <- par ## make a copy of current settings so you can reset your graphing parameters when you are done messing around below (this says: save the current parameters as something called 'opar')
+
+par(mfrow = c(1, 2)) # layout plot area with 1 row, 2 columns
+
+# we'll just combine two plots we have made before
+plot(iris$Petal.Length ~ iris$Petal.Width,
+     xlab = "Iris Petal Width (cm)", 
+     ylab = "Petal Length (cm)",
+     main = "Scatterplot", 
+     pch = 21,
+     bg = c("magenta", "dark green", "blue")[unclass(iris$Species)]
+)
+# For symbols 21 through 25, specify border color (col=) and fill color (bg=)
+
+boxplot(iris$Petal.Length ~ iris$Species,
+        col = c("magenta", "dark green", "blue"),
+        main = "Boxplot", xlab = "Species", ylab = "Petal Length (cm)"
+)
+```
+
+# Here we will provide some code to evaluate and plot correlations among variables
+
+```{r correlation plots}
+
+#  the quick and dirty way to look at correlation between multiple variables
+pairs(iris)
+
+# return correlation values between two variables; default is Pearson's
+cor(iris$Petal.Width, 
+    iris$Petal.Length)
+
+# you can specify other methods of estimating correlation (or do it yourself!)
+cor(iris$Petal.Width, 
+    iris$Petal.Length, 
+    method = "spearman")
+
+cor(iris$Petal.Width, 
+    iris$Petal.Length, 
+    method = "kendall")
+
+# I'm not going to fully explain this since we haven't talked about functions, but here's a function you can use to calculate Pearson correlation and plot it alongside variables.  Any time you see {} make sure to run the whole piece of code together
+panel.pearson <- function(x, y, ...) {
+  horizontal <- (par("usr")[1] + par("usr")[2]) / 2
+  vertical <- (par("usr")[3] + par("usr")[4]) / 2
+  text(horizontal, vertical, format(abs(cor(x, y)), digits = 2))
+}
+
+# use the pairs function again, but this time make it look nice, add colors, and have the upper set of panels show the panel.pearson function from above
+pairs(iris[1:4],
+      main = "Correlation iris variables", pch = 21,
+      bg = c("magenta", "dark green", "blue")[unclass(iris$Species)],
+      upper.panel = panel.pearson
+)
+## iris[1:4] specifies just use first 4 variables (row and column)
+
+## alternatively, you can specify which variables you want to plot (it is sometimes better to write them out this way so you can keep track if you are working with multiple datasets with different numbers of variables)--this will make the same plot as above
+pairs(iris[c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")],
+      main = "Correlation iris variables", pch = 21,
+      bg = c("magenta", "dark green", "blue")[unclass(iris$Species)],
+      upper.panel = panel.pearson
+)
+
+## here's another function to add smoothed (lowess) lines to a pairs correlation plot
+panel.smooth2 <- function(x, y, col = par("col"), bg = NA, pch = par("pch"),
+                          cex = 1, col.smooth = "red", span = 2 / 3, iter = 3, ...) {
+  points(x, y, pch = pch, col = col, bg = bg, cex = cex)
+  ok <- is.finite(x) & is.finite(y)
+  if (any(ok)) {
+    lines(stats::lowess(x[ok], y[ok], f = span, iter = iter),
+          col = 1, lwd = 2, ...
+    )
+  }
+}
+
+# then run the pairs function again, specifying the smoothing line in the lower panels to help you visualize the relationship between variables
+pairs(iris[1:4],
+      main = "Correlation iris variables", pch = 21,
+      bg = c("magenta", "dark green", "blue")[unclass(iris$Species)],
+      cex = 1.3, # I made the points bigger because they were hard to see
+      upper.panel = panel.pearson,
+      lower.panel = panel.smooth2
+)
+```
+
+# whew, thanks for hanging in there!  Have a donut...
+If you go online, you will see many, many more things people have done with these iris data! This is not even one of the better ones, it was just one that let me copy it's location from the internet :)
+![](http://covartech.github.io/prtdoc/prtDocGettingStartedExamples_01.png)
+
+
+

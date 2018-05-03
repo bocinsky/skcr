@@ -1,0 +1,310 @@
+---
+title: "Introduction to R"
+author: "Christine Albano"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  bookdown::html_document2:
+    code_folding: hide
+    df_print: paged
+    fig_caption: yes
+    toc: true
+    toc_float: true
+    collapsed: true
+editor_options: 
+  chunk_output_type: inline
+---
+
+# Learning goals
+In this short tutorial, you will learn how to:
+
+  * perform basic mathematical and logical test operations
+  
+  *  assign variables
+  
+  * identify different data types (character, numeric, integer, logical, factor)
+  
+  * identify basic object types (dataframe, vector, matrix)
+  
+  * select elements within objects
+  
+  * read and write data from/to external file(e.g., csv, excel, txt)
+  
+  * get help when you need it using R's 'help' menu or the internet
+  
+
+# R Markdown
+This is an R Markdown file, a plain text file that has the extension .Rmd (rather than .R)
+This is a convenient way to bundle your code, results, and visualizations that enhances reproducibility and efficient reporting
+You can run each code chunk by clicking the green 'play' icon. RStudio executes the code and displays the results inline with your file.
+Notice that the file contains three types of content:
+  * An (optional) header at the very top of the file surrounded by ---s at the top of the file
+  
+  * R code chunks surrounded by ```s
+  
+  * lines beginning with # are comments describing what the code does and are not executed. # can be added/removed from a line of code using Ctrl/Cmd +Shift+C 
+  
+# Setup
+At the beginning of a script we typically call the packages we want to use and set our working directory. This entire chunk of code can be run by clicking on the green 'play' button or by highlighting specific lines and pressing  'Cntrl'/'Cmd' + 'Enter'
+
+```{r setup, include=FALSE}
+# import packages
+# install.packages("devtools")
+# devtools::install_cran("tidyverse")
+library(tidyverse)
+library(readxl)
+
+# set a pathname to the directory you wnat to where file inputs are found and outputs are sent). In this case, we use the current directory where this .Rmd file is located.
+# we know this by asking R what the current working directory is
+getwd()
+
+# in the instance we want to change the directory, it can be done using setwd()
+# dir <- setwd("C:/Users/calbano/Documents/RShortCourse")
+```
+
+# Mathematical and Logical Operations in R
+## Math operations
+In its most basic form, R can be used as a simple calculator. 
+```{r do math1}
+
+
+# multiplication
+5 * 5
+
+# division
+5 / 5
+
+# addition
+5 + 5
+
+# subtraction
+5 - 5
+
+# exponentiation
+5^5
+
+#  natural log.  also log10, log2, etc.
+log(5)
+
+# square root
+sqrt(5)
+```
+
+## Logical Operations
+Logical operations, that is, testing whether something is true or false, are also very useful in R for setting conditions for selecting subsets of your data or telling R when or when not to do something. Here are a few of them. 
+
+
+```{r do math2}
+
+# greater than
+5 > 4
+
+# greater than or equal to
+5 >= 4
+
+# less than
+5 < 4
+
+# less than or equal to
+5 <= 4
+
+# equal to -- note the double equals sign
+5 == 4
+
+# not equal to -- the ! is interpreted as 'not'
+5 != 4
+
+# is value NA?
+is.na(5)
+!is.na(5)
+```
+# Assigning variables
+A variable allows you to store a value or an object in R.
+The variable name goes on the left, the left arrow is the assignment operator, the value or object goes on the right
+On a PC, the  "Alt"+"-" keys acts as a shortcut for the assignment operator, On a Mac, use "Option"+"-" 
+```{r assign variables1}
+
+# You should now see 'my_var' in the Environment tab in the upper right hand window
+my_var <- 4
+
+# when you assign a variable, it doesn't print to the console. To view the values/objects in the variable, simply type its name
+my_var
+# or
+print(my_var)
+```
+
+```{r assign variables2}
+# note that mathematical operations can be performed using variables, provided they are numeric
+my_var2 <- 5
+my_var + my_var2
+```
+#  Data types
+R has a handfull of basic data types. These include:
+
+```{r data types1}
+
+
+# logical - True or False - note that TRUE/FALSE are all caps
+my_logical_var <- TRUE
+typeof(my_logical_var)
+my_logical_var
+
+# integer - a whole number (no decimal places) - the L lets R know you want this to be an integer. This is not always required.
+my_integer_var <- 1L
+typeof(my_integer_var)
+my_integer_var
+
+# numeric - a number with or without decimal places - aka 'double' numeric type
+my_numeric_var <- 2
+typeof(my_numeric_var)
+my_numeric_var
+
+# character -  string of text, surrounded by quotation marks
+my_character_var <- "I like apples"
+typeof(my_character_var)
+my_character_var
+```
+
+R allows you to 'coerce' data to different types, as appropriate. Character is the most flexible data type -- anything can be converted to this type.
+
+```{r data types2}
+
+
+as.character(my_numeric_var)
+
+as.integer(my_numeric_var)
+
+as.numeric(my_logical_var)
+
+# factors are another data type that is very useful for grouping data. This data type represents different levels or classes.
+as.factor(my_integer_var)
+```
+
+#  Data Structure Types
+
+## Vectors
+There are a number of basic object types in R. We briefly describe two of them here but note that there are many others not covered here. For the rest of the course we will mostly be focused on data frames.
+
+A vector is a one-dimensional list of values of the same data type (i.e., character, numeric, etc.) that could be considered as equivalent to a single row or column in Excel. The key difference from Excel is that R forces the data in a vector to be all one type.
+
+```{r data structure types vector}
+
+# In this example, we combine 4 values - 2 numbers and 2 text strings - using c().
+# We see that R coerces the vector to a character to accommodate both types of values
+my_vector <- c(1, "a", 2, "b", 3, "c")
+typeof(my_vector)
+my_vector
+```
+
+## Dataframes
+
+A dataframe is a two-dimensional dataset that could be considered as equivalent to a table or worksheet in Excel. The key difference from Excel is, that R forces the data in a *column* to be all one data type, but datatypes among rows can differ. So, columns in a dataframe are really a collection of vectors. All columns must be the same length and all rows must be the same length.
+
+
+```{r data structure types dataframes}
+
+# In this example, we create a 'tibble' dataframe, which we discuss in a few moments
+
+my_dataframe<- tibble(
+  `letters` = c("a", "b", "c"),
+  `numbers` = c(1,2,3)
+)
+my_dataframe
+
+```
+# Selecting elements from a data structure
+
+Elements within any data structure can be called using indices of their position (e.g. rows and columns) within the data structure, surrounded by [] 
+
+```{r select elements}
+
+# We can view the data structures using the following command. It tells us the data type and length of each dimension
+str(my_vector)
+
+# note that with a dataframe, R identifies the rows as "observations" and columns as "variables"
+str(my_dataframe)
+
+# We can call specific locations using [] to get the value at that location. For a vector, we use a single number
+my_vector[2]
+
+# for a dataframe, we use row and column indices. The first value in the bracket is the row index. The second value in the index is the column index.-- the number 1 is in row 1, column 2.
+
+my_dataframe[1, 2]
+
+# since the dataframe has column names, we can also call it using the column name and a row index. We use the $ sign to specify a column name within a dataset. Since "a" is in the first row of the letters column, we call it this way:
+
+my_dataframe$letters[1]
+
+
+# we can also change column names this way
+colnames(my_dataframe) <- c("lets", "nums")
+str(my_dataframe)
+```
+
+# Reading files into R as dataframes.
+Now that we know a bit more about data structures and types, we are ready to import a dataset. From here on out we are going to use the Tidyr package, which imports data as a special type of dataframe called a 'Tibble'. The Tibble dataframe has several advantages over the 'regular' dataframe, including nicely formatted printing, more useful defaults, and faster imports. All this said, Tibble and regular dataframes are readily converted to one type vs. the other if the need arises.
+
+
+```{r read file}
+
+# Read comma (",") separated values
+clim_data <- read_csv("data/climate_station_data2017.csv", col_names = TRUE)
+clim_data
+
+# # Read excel file
+# # first we identify what sheets the file contains.
+# excel_sheets('data/climate_station_data2017.xlsx')
+#
+# #since there is only one sheet we don't need to specify which one
+# clim_dataxls<-read_excel('data/climate_station_data2017.xlsx')
+# clim_dataxls
+#
+# # Read specific sheet in excel - can be called by name or an index
+# read_excel('data/climate_station_data2017.xlsx', sheet = "Sheet1")
+# read_excel('data/climate_station_data2017.xlsx', sheet = 1)
+
+# We see that the first few lines print in the window below. We can view different parts of the file using the following commands:
+
+View(clim_data) # opens the entire datset in the script window (always a good idea to take a look!)
+head(clim_data) #  shows us the first few lines
+tail(clim_data) #  shows us the last few lines
+dim(clim_data) # shows us the number of rows and columns
+
+# or we can use
+nrow(clim_data)
+ncol(clim_data)
+```
+#  Writing files
+
+```{r write file}
+# to write a file to a csv, we use the following command:
+write_csv(clim_data, path = "data/climate_station_data2017write.csv")
+```
+
+# Getting Help
+
+```{r get help}
+# Help with any commands are packages can be found with R's help functions
+# to get help with a particular function, we put a question mark in front of it. R pulls up a description and vignette
+?write_csv
+
+# You can also search help files for a a word or phrase
+help.search("get working directory")
+
+# Find help for a package.
+help(package = tidyverse)
+```
+More generally, if you need help doing something that isn't covered in the above sources, Google it! There are several online question/answer forums, such as stackoverflow.com where you are likely to find an answer, but searches like "how to ...[insert what you want to do here]... in r" will generally get you there.
+
+#  Exercise
+Open a new R script (File -> new file -> R Script) and call in the tidyverse package using library() (see first code chunk above). Write code to import the Climate_station_data2016.csv file and to get the answers to the following questions:
+
+  * How many rows and colums does the file have?
+  
+  * What is the data type of TMinF?
+  
+  * What is the value of TMaxF in row 50?
+  
+  * Coerce the Station column to a factor data type. How many levels are there?
+
+
+

@@ -1,0 +1,150 @@
+---
+title: "Introduction to graphing in R"
+author: "Tracy Bowerman"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  bookdown::html_document2:
+    code_folding: hide
+    df_print: paged
+    fig_caption: yes
+    toc: true
+    toc_float: true
+    collapsed: true
+editor_options: 
+  chunk_output_type: inline
+---
+
+In this tutorial we will introduce users to some basic code for making plotting and visualizing data
+
+# Learning goals
+In this short tutorial, you will learn
+  
+  -  make basic scatterplots in R
+  -  make boxplots in R
+  -  subset data when referencing a dataset (here used in plots)
+  
+
+set your working directory, just like before:
+```{r setup, include=FALSE}
+# set a pathname to the directory you wnat to where file inputs are found and outputs are sent). In this case, we use the current directory where this .Rmd file is located.
+dir <- getwd()
+```
+
+# The Iris Dataset 
+We will plot some data using a dataset available in base R (it comes with R). These data were collected by Edgar Anderson in 1935 and used by R.A. Fisher (and many, many people since).  The iris data set gives the measurements in centimeters of the variables sepal length and width and petal length and width, respectively, for 50 flowers from each of 3 species of iris. The species are Iris setosa, versicolor, and virginica. Here's what they look like:
+
+![](http://www.socr.umich.edu/people/dinov/2017/Spring/DSPA_HS650/images/IrisDataPic_SepalsPetals_LengthWidth.png)
+
+## Take a look at the data
+```{r examine dataset}
+names(iris)
+str(iris)
+summary(iris)
+```
+
+## Let's use a scatterplot to look at the relationship between petal length and width
+```{r scatterplot}
+
+# here's a basic plot command: plot(x, y)
+# this says using the dataframe 'iris', plot 'petal width' on the x axis, and 'petal length' on the y axis
+with(iris, 
+     plot(Petal.Width, 
+          Petal.Length))
+
+# an alternative way to write this is to specify the dataframe iris, follwed by a dollar sign $, then the column name
+plot(iris$Petal.Width, 
+     iris$Petal.Length)
+
+# I use this notation to help me keep track of multiple columns within different data frames
+
+# another way to make the same plot is to use a tilde ~
+# In R the tilde is used to separate left and right sides of a model formula
+# so you could read this as: plot Petal Length as a function of Petal Width
+plot(iris$Petal.Length ~ iris$Petal.Width)
+
+# make this look nicer by adding axis labels for the x axis (xlab) and y axis (ylab), plus a title (main)
+plot(iris$Petal.Length ~ iris$Petal.Width,
+  xlab = "Petal Width (cm)", ylab = "Petal Length (cm)",
+  main = "Data from three iris species"
+)
+
+# there is some clear separation in the points.  To see if those separate by species, make each species a separate color with col= (this only works if the variable you are using to definte the colors is categorical)
+plot(iris$Petal.Length ~ iris$Petal.Width,
+  xlab = "Petal Width (cm)", ylab = "Petal Length (cm)",
+  main = "Data from three iris species", col = iris$Species
+)
+```
+
+
+## Use a boxplot to further visualize the differences between species
+
+```{r boxplot}
+
+# the same formula can be used to make a boxplot
+boxplot(iris$Petal.Length ~ iris$Species)
+
+# then color in the boxes using col= and specifying the colors as a list
+boxplot(iris$Petal.Length ~ iris$Species,
+  col = c("black", "red", "green")
+)
+# if we have not yet mentioned it, you specify a list or vector of multiple items in R using the c() function, which stands for 'concatenate'
+```
+
+#  Plotting Exercise
+
+* Open a new R script or just add onto the chunk of code above
+
+* Play around with adding axis labels, title, and changing colors in the boxplot
+
+## We will go back to the scatterplot and make our plots look nicer
+
+```{r Adding to the scatterplot}
+## let's go back to the iris data scatterplot
+
+# use pch= to change the plotting symbol (stands for plot character)
+plot(iris$Petal.Length ~ iris$Petal.Width,
+  xlab = "Iris Petal Width", ylab = "Iris Petal Length",
+  main = "Data from three iris species", pch = 2
+) # all points will be a triangle
+
+plot(iris$Petal.Length ~ iris$Petal.Width,
+  xlab = "Iris Petal Width", ylab = "Iris Petal Length",
+  main = "Data from three iris species",
+  pch = c(1, 2, 18)[unclass(iris$Species)]
+)
+# This works by using c(1, 2, 18) to create a vector,
+# unclass(iris$Species) turns the list of species from a list of categories
+# (a "factor" data type in R terminology) into a list of numbers, each representing a species:
+c(1, 2, 18)[unclass(iris$Species)]
+
+# do the same thing with assigning different colors to the 3 species
+plot(iris$Petal.Length ~ iris$Petal.Width,
+  xlab = "Iris Petal Width", ylab = "Iris Petal Length",
+  main = "Data from three iris species",
+  col = c("magenta", "dark green", "blue")[unclass(iris$Species)]
+)
+
+# add a legend: specify where it will be located, assign a unique title for each of the species, and specify the colors and plot characters (or symbol)
+legend("topleft",
+  legend = unique(iris$Species),
+  col = c("magenta", "dark green", "blue"), pch = 1
+)
+
+# alternatively, you can use x,y coordinates to place the legend
+legend(1.8, 4,
+  legend = unique(iris$Species),
+  col = c("magenta", "dark green", "blue"), pch = 1, bty = "n"
+)
+
+# saving plots:
+# in Rstudio, you can save a plot very quickly by opening the 'Export' drop-down menu in the figure window, and selecting 'Copy to Clipboard'.  I use this to quickly past figures into a Word or powerpoint document as a way of taking notes while I work.  that way I can place 2 similar graphs side by side and look closely at them, instead of clicking back and forth.
+
+# to make a printable, high quality figure, click on 'Save as PDF' or 'Save as Image' and then specify your size, orientation, and file you save to
+```
+
+# Plotting exercise 2
+
+here's link to more plotting options:
+ https://www.statmethods.net/advgraphs/parameters.html
+
+make plot of the iris data with 3 colors and 3 shapes of your choosing (one for each species, and a matching legend

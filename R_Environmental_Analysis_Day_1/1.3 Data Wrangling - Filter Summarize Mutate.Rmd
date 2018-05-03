@@ -1,0 +1,171 @@
+---
+title: "Data Wrangling in *R* - Part One"
+author: "Christine Albano"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  bookdown::html_document2:
+    code_folding: hide
+    df_print: paged
+    fig_caption: yes
+    toc: true
+    toc_float: true
+editor_options: 
+  chunk_output_type: console
+---
+
+
+In this tutorial we focus on some basic data descriptive statistics, subsetting, summarization, and transformation using the 'Tidyverse' set of packages, which were designed to facilitate everyday data management and visualization tasks using a consistent data structure and syntax. Much of the content in this tutorial is based on the online resource [R for Data Science](http://r4ds.had.co.nz/) by Garrett Grolemund and Hadley Wickham. 
+
+![](http://r4ds.had.co.nz/diagrams/data-science-wrangle.png)
+
+# Learning goals
+In this short tutorial, you will get started with wrangling data by learning how to:
+
+  * Get basic summary statistics from a data frame
+  
+  * Use standard *tidyr* grammar (piping) to perform basic data manipulation tasks 
+  
+  * Conduct various types of data transformations using *dplyr*, including:
+  
+      * filtering rows with *filter()*
+      
+      * creating new variables with *mutate()*
+      
+      * summarizing with *summarize()*
+
+We will use example climate data collected at local stations to understand these concepts.
+
+```{r include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, 
+                      message = FALSE)
+```
+
+```{r setup}
+
+# install.packages("devtools")
+# devtools::install_cran("tidyverse", repos = "https://cran.rstudio.com/")
+library(tidyverse)
+getwd()
+# dir <- setwd("C:/Users/calbano/Documents/RShortCourse")
+```
+
+# Importing data into *R*
+
+Here, we import the 2017 meteorological data from Hungry Horse and Polson Kerr Dams as a *tibble* dataframe.
+
+```{r dataimport}
+#  import data as a Tibble dataframe. note that the column names and data types are listed in the results field below.
+clim_data <- read_csv("data/climate_station_data2017.csv")
+View(clim_data)
+head(clim_data)
+tail(clim_data)
+```
+
+#  Basic Summary Statistics
+
+```{r basic data summary}
+
+# we can get a quick summary of each column using
+summary(clim_data)
+# we can also use individual commands to get specific stats. na.rm=TRUE tells R ignore entries with no data
+
+mean(clim_data$PrecipIn, na.rm = TRUE)
+max(clim_data$PrecipIn, na.rm = TRUE)
+min(clim_data$PrecipIn, na.rm = TRUE)
+sum(clim_data$PrecipIn, na.rm = TRUE)
+sd(clim_data$PrecipIn, na.rm = TRUE)
+
+quantile(clim_data$PrecipIn, na.rm = TRUE)
+```
+
+# Using the pipe operator `%>%` in R
+As you have already likely discovered, there are an almost infinite number of ways to accomplish a given task in R. Here, we are going to focus on and highlight the utility of the pipe operator `%>%`, which provides a clean and intuitive way to structure code and perform operations in R, particularly when you are seeking to perform multiple operations.
+
+```{r piping1}
+
+# There are three basic rules we follow when thinking about pipes
+
+# 1. f(x) can be written as x %>% f, where f is the function and x is the argument in the function
+# for example:
+x <- 3
+# calculate the log of x
+log(x) # form f(x) is equivalent to
+x %>% log() # form x %>% f
+
+
+# 2. f(x, y) can be rewritten as x %>% f(y) so argument1 %>% function(argument2)
+#  for example:
+x <- pi
+x
+
+y <- 3
+
+# round pi to 6 decimal places
+round(x, y) # form f(x, y) is equivalent to
+x %>% round(y) # argument1 %>% function(argument2)
+
+
+# 3. h(g(f(x))) can be rewritten as  x %>% f %>% g %>% h. This is a little harder to wrap our heads around. We will build up to this in the following lines of code and use our climate data as an example of this.
+```
+
+# Real world example of using the pipe operator to filter, summarize, and mutate (i.e., tranform) data
+
+Lets try a working example of piping to get the mean precipitation for Polson Kerr Dam in mm (rather than inches) from our clim_data data frame. We will use commands from the **dplyr** package (part of the Tidyverse suite of packages) to do this.
+
+This task involves three steps. We'll try this one step at a time, then put it all together into a longer pipe.
+
+```{r piping2}
+
+# First, we need to *filter* the dataset to subset just the rows with data for Polson Kerr Dam.
+# filter() allows you to subset observations based on their values. The first argument is the name of the data frame. The second and subsequent arguments are the expressions that filter the data frame.
+
+PKdata <- clim_data %>% 
+  filter(Station == "Polson Kerr Dam")
+PKdata
+
+# Second, we need to *summarize* the data in the PrecipIn column as the mean.
+# summarise() collapses a data frame to a single row. As above, the first argument is the name of the dataframe. The second argument describes the type of summary (in this case, we are using mean()), what to summarize (column PrecipIn), and what to name the column containing the new variable (mean.precip.in)
+
+PKdata_mean <- PKdata %>% 
+  summarize(mean.precip.in = mean(PrecipIn))
+
+PKdata_mean
+
+
+# Third, we need to transform or *mutate* the data from inches to mm (ie., multiply by 25.4).
+# mutate() adds new columns that are functions of existing columns.As with above, multiple mutations can be performed simultaneously
+PKdata_mean <- PKdata_mean %>% 
+  mutate(mean.precip.mm = mean.precip.in * 25.4)
+PKdata_mean
+
+# OK -- now lets give that third rule of piping a try x %>% f %>% g %>% h, where x = PKdataset, f = filter(), g = summarize(), and h = mutate(). Not so bad, right?
+PKdata_mean <- PKdata %>%
+  filter(Station == "Polson Kerr Dam") %>%
+  summarize(mean.precip.in = mean(PrecipIn)) %>%
+  mutate(mean.precip.mm = mean.precip.in * 25.4)
+
+# Note that for any of these steps, we can include multiple criteria/computations. For example, if we wanted to get summaries for all three variables, we could do this:
+PKdata_mean <- PKdata %>%
+  filter(Station == "Polson Kerr Dam") %>%
+  summarize(
+    mean.precip.in = mean(PrecipIn),
+    mean.TMax.F = mean(TMaxF),
+    mean.TMin.F = mean(TMinF)
+  ) %>%
+  mutate(
+    mean.precip.mm = mean.precip.in * 25.4,
+    mean.TMax.C = (mean.TMax.F - 32) * 5 / 9,
+    mean.TMin.C = (mean.TMin.F - 32) * 5 / 9
+  )
+```
+
+# Exercise
+* Open a new R script 
+
+* Import the climate_station_data2017.csv dataset
+
+* Calculate the following:
+
+  * the 2017 annual sum of precipitation in cm for the Hungry Horse Dam meteorological station
+  * the 2017 annual mean of TMax and TMin in degrees C for the Hungry Horse Dam meteorological station
+  * For an extra challenge, calculate the annual mean temperature (mean of TMax and Tmin)

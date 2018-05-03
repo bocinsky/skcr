@@ -1,0 +1,490 @@
+---
+title: "ggplot2 demo"
+author: "Christine Albano"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  bookdown::html_document2:
+    code_folding: hide
+    df_print: paged
+    fig_caption: yes
+    toc: true
+    toc_float: true
+    collapsed: true
+editor_options: 
+  chunk_output_type: inline
+---
+
+
+This document provides a brief description and demonstration of the *ggplot2* package, adapted from the R for Data Science book. *ggplot2* employs a 'grammar of graphics' to create publication-quality data visualizations and is an alternative to the base plotting functions in R that you have already learned about and the relative advantages of each really depend on what you want to do and how familiar you are with one vs the other. Some brief thoughts on how they compare include:
+
+* Base R graphics are infinitely flexible --anything you can do in ggplot2 can be done in base R. However, base R graphics take a fair bit of work to make pretty. I find them most useful when I want to plot something simple very quickly and don't care what it looks like (e.g., for exploratory data analysis) OR if I want to plot something complex and can't figure it out in ggplot2
+
+* ggplot2 has default settings that can create some really nice graphics in as little as one line of code, but if you want to do something very specific, it can sometimes be a challenge to navigate.
+
+* ggplot2 has excellent online documentation so help is easy to find if you are stuck
+
+* ggplot2 works relatively seamlessly with the *Tidyverse* so if you are already working with this grammar and data structure it can be faster and more intuitive to work in ggplot2
+
+* faceting,layering, and aesthetics in ggplot2 make it really easy to view your data from different perspectives without having to write alot of new code
+
+
+
+
+# ggplot demo
+We start here with a few select examples of the types of plots that can be generated in ggplot2. Some of these are quite simple, requiring only a couple of lines of code, while others are more involved. Note that many of these codeblocks require package installations you may not yet have in order to work properly
+
+```{r include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+## Colors
+
+```{r colorbrewer}
+# devtools::install_cran(c("RColorBrewer",
+#                          "ggplot2",
+#                          "ggcorrplot"))
+
+library(RColorBrewer)
+library(ggplot2)
+library(ggcorrplot)
+# Code source: https://rstudio-pubs-static.s3.amazonaws.com/177286_826aed2f00794640b301aeb42533c6f1.html
+
+ggplot(
+  diamonds,
+  aes(carat, price)
+) +
+  geom_point(aes(color = cut)) +
+  scale_color_brewer(
+    type = "div",
+    palette = 4,
+    direction = 1
+  ) +
+  xlab("Carats") +
+  ylab("Price") +
+  ggtitle("Diamonds")
+
+ggplot(
+  diamonds,
+  aes(carat,
+    price,
+    color = cut
+  )
+) +
+  geom_point() +
+  scale_color_brewer(
+    type = "div",
+    palette = "PRGn",
+    direction = 1
+  ) +
+  xlab("Carats") +
+  ylab("Price") +
+  ggtitle("Diamonds")
+```
+
+## Correlation heat map
+
+```{r correlation heatmap}
+library(ggcorrplot)
+# code source: http://www.sthda.com/english/wiki/ggcorrplot-visualization-of-a-correlation-matrix-using-ggplot2
+
+data(mtcars)
+corr <- round(cor(mtcars), 1)
+p.mat <- cor_pmat(mtcars)
+ggcorrplot(corr,
+  hc.order = TRUE,
+  type = "lower", p.mat = p.mat
+)
+```
+
+## Combined plots
+
+```{r combined scatter density}
+
+library(ggplot2)
+library(gridExtra)
+# Code source: http://felixfan.github.io/ggplot2-cheatsheet/
+
+# generate some data
+set.seed(999)
+xvar <- c(rnorm(1500, mean = -1), rnorm(1500, mean = 1.5))
+yvar <- c(rnorm(1500, mean = 1), rnorm(1500, mean = 1.5))
+zvar <- as.factor(c(rep(1, 1500), rep(2, 1500)))
+xy <- data.frame(xvar, yvar, zvar)
+
+
+# placeholder plot - prints nothing at all
+empty <- ggplot() + geom_point(aes(1, 1), colour = "white") + theme(
+  plot.background = element_blank(),
+  panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+  panel.border = element_blank(), panel.background = element_blank(), axis.title.x = element_blank(),
+  axis.title.y = element_blank(), axis.text.x = element_blank(), axis.text.y = element_blank(),
+  axis.ticks = element_blank()
+)
+
+# scatterplot of x and y variables
+scatter <- ggplot(xy, aes(xvar, yvar)) + geom_point(aes(color = zvar)) + scale_color_manual(values = c(
+  "orange",
+  "purple"
+)) + theme(legend.position = c(1, 1), legend.justification = c(
+  1,
+  1
+))
+
+# marginal density of x - plot on top
+plot_top <- ggplot(xy, aes(xvar, fill = zvar)) + geom_density(alpha = 0.5) +
+  scale_fill_manual(values = c("orange", "purple")) + theme(legend.position = "none")
+
+# marginal density of y - plot on the right
+plot_right <- ggplot(xy, aes(yvar, fill = zvar)) + geom_density(alpha = 0.5) +
+  coord_flip() + scale_fill_manual(values = c("orange", "purple")) + theme(legend.position = "none")
+
+# arrange the plots together, with appropriate height and width for each row
+# and column
+grid.arrange(plot_top, empty, scatter, plot_right, ncol = 2, nrow = 2, widths = c(
+  4,
+  1
+), heights = c(1, 4))
+```
+
+## Time Series
+
+```{r timeseries}
+library(ggplot2)
+library(lubridate)
+theme_set(theme_bw())
+
+df <- economics_long[economics_long$variable %in% c("psavert", "uempmed"), ]
+df <- df[lubridate::year(df$date) %in% c(1967:1981), ]
+
+# labels and breaks for X axis text
+brks <- df$date[seq(1, length(df$date), 12)]
+lbls <- lubridate::year(brks)
+
+# plot
+ggplot(df, aes(x = date)) +
+  geom_line(aes(y = value, col = variable)) +
+  labs(
+    title = "Time Series of Returns Percentage",
+    subtitle = "Drawn from Long Data format",
+    caption = "Source: Economics",
+    y = "Returns %",
+    color = NULL
+  ) + # title and caption
+  scale_x_date(labels = lbls, breaks = brks) + # change to monthly ticks and labels
+  scale_color_manual(
+    labels = c("psavert", "uempmed"),
+    values = c("psavert" = "#00ba38", "uempmed" = "#f8766d")
+  ) + # line color
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, size = 8), # rotate x axis text
+    panel.grid.minor = element_blank()
+  ) # turn off minor grid
+```
+
+## Calendar Heatmap
+
+```{r heatmap}
+library(ggplot2)
+library(plyr)
+library(scales)
+library(zoo)
+
+# code source:# http://margintale.blogspot.in/2012/04/ggplot2-time-series-heatmaps.html
+
+df <- read.csv("https://raw.githubusercontent.com/selva86/datasets/master/yahoo.csv")
+df$date <- as.Date(df$date) # format date
+df <- df[df$year >= 2012, ] # filter reqd years
+
+# Create Month Week
+df$yearmonth <- as.yearmon(df$date)
+df$yearmonthf <- factor(df$yearmonth)
+df <- ddply(df, .(yearmonthf), transform, monthweek = 1 + week - min(week)) # compute week number of month
+df <- df[, c("year", "yearmonthf", "monthf", "week", "monthweek", "weekdayf", "VIX.Close")]
+head(df)
+
+# Plot
+ggplot(df, aes(monthweek, weekdayf, fill = VIX.Close)) +
+  geom_tile(colour = "white") +
+  facet_grid(year ~ monthf) +
+  scale_fill_gradient(low = "red", high = "green") +
+  labs(
+    x = "Week of Month",
+    y = "",
+    title = "Time-Series Calendar Heatmap",
+    subtitle = "Yahoo Closing Price",
+    fill = "Close"
+  )
+```
+
+## Spatial data
+
+```{r spatial}
+library(tidyverse)
+library(maps)
+
+# Code Source: https://mgimond.github.io/ES218/Week12a.html
+
+# first plot a simple map of the us
+cnty <- map_data("county")
+ggplot(cnty, 
+       aes(long, lat, group = group)) +
+  geom_polygon(aes(fill = region), 
+               show.legend = FALSE, 
+               colour = rgb(1, 1, 1, 0.2)) +
+  coord_map("bonne", param = 45) +
+  theme_void()
+
+#  get data on median income per person
+df <- read_csv("http://mgimond.github.io/ES218/Data/Income_education.csv")
+df1 <- df %>% select(subregion = County, 
+                     region = State, 
+                     B20004001)
+
+# create lookup table between state names/abbreviations
+st <- tibble(region = tolower(state.name), 
+                 State = tolower(state.abb))
+st <- bind_rows(st, 
+                tibble(region = "district of columbia", 
+                               State = "dc"))
+
+# join census data to counties
+df1 <- df %>%
+  inner_join(st, by = "State") %>%
+  mutate(subregion = tolower(County)) %>%
+  select(subregion, 
+         region, 
+         B20004001)
+
+cnty.df1 <- inner_join(cnty, 
+                       df1, 
+                       by = c("region", "subregion"))
+
+# map income distribution
+ggplot(cnty.df1, 
+       aes(long, 
+           lat, 
+           group = group)) +
+  geom_polygon(aes(fill = B20004001), 
+               colour = rgb(1, 1, 1, 0.2)) +
+  coord_quickmap()
+```
+
+
+## Interactive plots
+```{r plotly}
+library(plotly)
+
+
+d <- diamonds[sample(nrow(diamonds), 1000), ]
+p <- ggplot(data = d, 
+            aes(x = carat, 
+                y = price)) +
+  geom_point(aes(text = paste("Clarity:", clarity)), 
+             size = 4) +
+  geom_smooth(aes(colour = cut, 
+                  fill = cut)) + 
+  facet_wrap(~ cut)
+
+(gg <- ggplotly(p))
+```
+
+
+#  Some ggplot2 fundamentals
+
+As mentioned above, *ggplot2* uses a 'grammar of graphics'. Here, we will briefly walk through the components to demonstrate its capabilities. *ggplot2* uses the following template to create a chart:
+
+ggplot(data = **DATA**) + 
+  **GEOM_FUNCTION**(
+     mapping = aes(**MAPPINGS**),
+     stat = **STAT**, 
+     position = **POSITION**
+  ) +
+  **COORDINATE_FUNCTION** +
+  **FACET_FUNCTION**
+
+We see that there are 7 components. We don't always need to use all of these. At a minimum, ggplot2 requires the data, a geometric function, and a mapping to be specified. The rest is gravy.
+
+## Basic components of a ggplot
+
+We'll use the mpg data package included with ggplot to run through some examples of ggplot capabilities. Here we create the most basic of plots.
+
+```{r simple plot}
+
+# get information about the mpg data package
+?mpg
+
+# view mpg data frame
+mpg
+
+# make a scatterplot (GEOM_FUNCTION= geom_point) of engine displacement vs. highway miles per gallon.
+# The ggplot statement establishes a coordinate system and data= tells what data to plot. the geom_point specifies how data are visualized.
+
+ggplot(data = mpg) +
+  geom_point(mapping = aes(x = displ, 
+                           y = hwy))
+```
+## geometric objects
+
+A geom is the geometrical object that a plot uses to represent data -- lines, bars, points are all geometrical objects. Here we make some simple adjustments to use different objects to represent the data
+
+```{r geom plot}
+
+# lots of options for geometric objects -- simply type geom_ and view the pull down menu to see what these are
+
+# another option for looking at continuous vs. continuous is geometric smooth (uses a loess function)
+ggplot(data = mpg) +
+  geom_smooth(mapping = aes(x = displ, 
+                            y = hwy))
+
+
+#  ggplot works by layering objects. Here we can layer the points and smoothed lines.  Note that if we want to apply the same aesthetic mappings to all geometric objects in the plot, we can specify theses in the ggplot statement to avoid redundancy. Any additional aesthetics specified for the object will override this.
+ggplot(data = mpg, 
+       mapping = aes(x = displ, 
+                                 y = hwy)) +
+  geom_point() +
+  geom_smooth()
+
+
+# for a discrete vs. continuous variable
+ggplot(data = mpg) +
+  geom_boxplot(mapping = aes(x = trans, 
+                             y = hwy))
+
+# for a single continuous variable
+ggplot(data = mpg) +
+  geom_histogram(mapping = aes(x = displ), 
+                 binwidth = 0.5)
+
+# for a single discrete variable
+ggplot(data = mpg) +
+  geom_bar(mapping = aes(x = trans))
+```
+## aesthetic mappings
+
+Aesthetics are visual properties of the objects in the plot -- for example, size, shape, color
+
+```{r aesthetics plot}
+
+# here we add a color aesthetic to visualize a third variable, vehicle class.ggplot automatically adds a legend here.
+
+ggplot(data = mpg) +
+  geom_point(mapping = aes(x = displ, 
+                           y = hwy, 
+                           color = class))
+
+# some other options -- some are more appropriate/useful than others
+ggplot(data = mpg) +
+  geom_point(mapping = aes(x = displ, 
+                           y = hwy, 
+                           alpha = class))
+
+ggplot(data = mpg) +
+  geom_point(mapping = aes(x = displ, 
+                           y = hwy, 
+                           shape = class))
+
+ggplot(data = mpg) +
+  geom_point(mapping = aes(x = displ, 
+                           y = hwy, 
+                           size = class))
+
+ggplot(data = mpg) +
+  geom_smooth(mapping = aes(x = displ, 
+                            y = hwy, 
+                            linetype = drv))
+```
+## Faceting
+
+Faceting is one place that ggplot really stands out. It provides another way to easily add additional variables to your plot.
+
+```{r facet plot}
+
+# facets can be created based on on variable like this:
+ggplot(data = mpg) +
+  geom_point(mapping = aes(x = displ, 
+                           y = hwy)) +
+  facet_wrap(~ class, nrow = 2)
+
+# or by two variables, using facet_grid
+
+ggplot(data = mpg) +
+  geom_point(mapping = aes(x = displ, 
+                           y = hwy)) +
+  facet_grid(drv ~ cyl)
+```
+
+
+## statistics mappings
+
+We saw above in the geom_smooth plots that ggplot uses the loess smoothing function as a default statistic. Statistics are implicit in many of the plot types but can also be specified explicitly, depending on the context. The algorithm used to calculate new values for a graph is called a stat.
+
+```{r stats plot}
+
+# for a bar plot, a 'count' statistic is automatically calculated from the data
+ggplot(data = mpg) +
+  geom_bar(mapping = aes(x = trans))
+
+
+# for a geom_smooth plot, we can explicitly specify the statistical method using method = "lm", "glm", "gam", "loess", etc.
+
+ggplot(data = mpg, 
+       mapping = aes(x = displ, 
+                                 y = hwy)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+```
+
+## Position mappings
+
+The third component of mappings is the position. This is especially useful for bar charts
+```{r position plot}
+
+# the default here gives us a stacked bar chart
+ggplot(mpg, mapping = aes(x = fl, 
+                          fill = drv)) +
+  geom_bar()
+
+# but we can position the bars in differnt ways to get different types of bar charts
+ggplot(mpg, mapping = aes(x = fl, 
+                          fill = drv)) +
+  geom_bar(position = "dodge")
+
+ggplot(mpg, mapping = aes(x = fl, 
+                          fill = drv)) +
+  geom_bar(position = "fill")
+
+# or jitter the position of points to reveal overlapping points
+ggplot(data = mpg) +
+  geom_point(mapping = aes(x = displ, 
+                           y = hwy), 
+             position = "jitter")
+```
+
+## Coordinate systems
+Plots can readily be switched from one coordinate system to another --xy positions can be flipped or wrapped into a polar coordinate system
+
+```{r coordinate plot}
+
+bar <- ggplot(data = mpg) +
+  geom_bar(
+    mapping = aes(x = fl, 
+                  fill = drv),
+    show.legend = FALSE,
+    width = 1
+  )
+bar
+bar + coord_flip()
+bar + coord_polar()
+```
+
+
+
+#  Getting Help
+
+There are numerous resources online for *ggplot2* but here are a couple of good places to start:
+
+* [R for Data Science] (http://r4ds.had.co.nz/data-visualisation.html), by Garrett Grolemund and Hadley Wickham. 
+
+* [ggplot2 Cheat Sheet](https://www.rstudio.com/wp-content/uploads/2015/03/ggplot2-cheatsheet.pdf) as a quick reference
+
+*[ggplot 2 Reference] (http://ggplot2.tidyverse.org/reference/) for the complete documentation
